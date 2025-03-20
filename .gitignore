@@ -3,7 +3,7 @@
 *.log
 
 # Python関連
-venv/
+bic_venv/
 __pycache__/
 *.pyc
 

@@ -1,6 +1,8 @@
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from db_control import models, schemas, crud, connect
+from db_control.routers import answers
 import os
 from dotenv import load_dotenv
 
@@ -28,6 +30,12 @@ app.add_middleware(
     allow_methods=["*"], # すべてのHTTPメソッド（GET, POST, PUT, DELETEなど）を許可
     allow_headers=["*"] # すべてのHTTPヘッダーを許可
 )
+
+# DB初期化
+models.Base.metadata.create_all(bind=connect.engine)
+
+# ルーターを追加
+app.include_router(answers.router)
 
 @app.get("/")
 def root():
