@@ -4,6 +4,7 @@
 
 # Python関連
 bic_venv/
+venv/
 __pycache__/
 *.pyc
 
