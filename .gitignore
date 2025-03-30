@@ -2,11 +2,15 @@
 .env
 *.log
 
-# Python関連
+# 仮想環境
 bic_venv/
 venv/
+
+# Python関連
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
 
 # OS固有のファイル
 .DS_Store
