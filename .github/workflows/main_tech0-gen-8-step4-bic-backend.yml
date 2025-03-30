@@ -13,8 +13,10 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      PYTHON_VERSION: '3.11'  # Oryx用に明示追加
     permissions:
-      contents: read #This is required for actions/checkout
+      contents: read # This is required for actions/checkout
 
     steps:
       - uses: actions/checkout@v4
