@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from db_control import models, schemas, crud, connect
 from db_control.routers import answers
+from db_control.routers import question
 import os
 from dotenv import load_dotenv
 
@@ -36,6 +37,7 @@ models.Base.metadata.create_all(bind=connect.engine)
 
 # ルーターを追加
 app.include_router(answers.router)
+app.include_router(question.router)
 
 @app.get("/")
 def root():

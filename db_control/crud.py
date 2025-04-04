@@ -29,3 +29,37 @@ def save_answers(db: Session, answer_request: schemas.AnswerRequest):
 
     db.commit()
     return {"message": "Answers saved successfully"}
+
+# 質問と回答候補を送る
+def get_questions_by_category(db: Session, category_id: int):
+    questions = db.query(models.Question).filter(models.Question.category_id == category_id).all()
+    result = []
+
+    for q in questions:
+        if q.answer_type.value == "boolean":
+            choices = [{"label": "はい", "value": "1"}, {"label": "いいえ", "value": "0"}]
+        elif q.answer_type.value == "numeric":
+            choices = [{"label": str(i), "value": str(i)} for i in range(1, 6)]
+        elif q.answer_type.value == "categorical":
+            if q.id == 1:
+                choices = [{"label": "1R / 1K", "value": "1R / 1K"},
+                           {"label": "1DK〜2LDK", "value": "1DK〜2LDK"},
+                           {"label": "3LDK以上", "value": "3LDK以上"}]
+            elif q.id == 4:
+                choices = [{"label": "エリア設定", "value": "エリア設定"},
+                           {"label": "スケジュール設定", "value": "スケジュール設定"},
+                           {"label": "どちらも", "value": "どちらも"},
+                           {"label": "特になし", "value": "特になし"}]
+            else:
+                choices = []
+        else:
+            choices = []
+
+        result.append({
+            "id": q.id,
+            "question_text": q.question_text,
+            "answer_type": q.answer_type.value,
+            "choices": choices
+        })
+
+    return result

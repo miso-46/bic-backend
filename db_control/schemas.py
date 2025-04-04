@@ -15,3 +15,15 @@ class AnswerRequest(BaseModel):
 # レスポンス用（オプション）
 class AnswerResponse(BaseModel):
     message: str
+
+# 回答候補のスキーマ
+class Choice(BaseModel):
+    label: str
+    value: str
+
+# 質問と回答候補（リクエスト用）
+class QuestionWithChoices(BaseModel):
+    id: int
+    question_text: str
+    answer_type: str
+    choices: list[Choice] = []
