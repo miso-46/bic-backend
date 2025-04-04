@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 from db_control import models, schemas
+import datetime
 
 # 回答をDBに保存
 def save_answers(db: Session, answer_request: schemas.AnswerRequest):
@@ -29,6 +30,7 @@ def save_answers(db: Session, answer_request: schemas.AnswerRequest):
 
     db.commit()
     return {"message": "Answers saved successfully"}
+
 
 # 質問と回答候補を送る
 def get_questions_by_category(db: Session, category_id: int):
@@ -63,3 +65,18 @@ def get_questions_by_category(db: Session, category_id: int):
         })
 
     return result
+
+
+# ユーザー属性情報登録
+def save_user_info(db: Session, user_info: schemas.UserInfo) -> int:
+    new_user = models.User(
+        store_id=5,  # フロントエンドから固定で送られる store_id（今は一旦5にしておく）
+        age=user_info.age,
+        gender=user_info.gender,
+        household=user_info.household,
+        time=datetime.datetime.utcnow()
+    )
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    return new_user.id

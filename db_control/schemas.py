@@ -2,6 +2,15 @@ from pydantic import BaseModel, Field
 from typing import List, Union
 import datetime
 
+# ユーザー属性情報
+class UserInfo(BaseModel):
+    age: int
+    gender: str
+    household: int
+
+    class Config:
+        orm_mode = True
+
 # 回答データ（リクエスト用）
 class Answer(BaseModel):
     questionId: int
@@ -27,3 +36,4 @@ class QuestionWithChoices(BaseModel):
     question_text: str
     answer_type: str
     choices: list[Choice] = []
+

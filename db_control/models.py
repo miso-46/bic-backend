@@ -9,6 +9,16 @@ import datetime
 # Baseクラスを作成
 Base = declarative_base()
 
+# user テーブル（ユーザー属性）
+class User(Base):
+    __tablename__ = "user"
+    id = Column(Integer, primary_key=True, index=True)
+    store_id = Column(Integer, nullable=True)
+    age = Column(Integer, nullable=False)
+    gender = Column(String, nullable=False)  # 'male', 'female', 'other' などを想定
+    household = Column(Integer, nullable=False)
+    time = Column(DateTime, default=datetime.datetime.utcnow)
+
 # 回答の型を定義
 class AnswerType(enum.Enum):
     numeric = "numeric"
