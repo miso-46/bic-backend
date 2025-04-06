@@ -1,15 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from db_control.connect import get_db
 from db_control import schemas, crud
+from db_control.connect import get_db
 
-router = APIRouter(prefix="/user-info", tags=["user"])
+router = APIRouter(prefix="/user_info", tags=["user_info"])
 
-from db_control.schemas import UserInfo
-
-@router.post("", response_model=int)
-def save_user_info(user_info: UserInfo, db: Session = Depends(get_db)):
-    try:
-        return crud.save_user_info(db, user_info)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+@router.post("", response_model=schemas.UserInfoResponse)  # ← ここで指定
+def create_user(user_info: schemas.UserInfo, db: Session = Depends(get_db)):
+    result = crud.save_user_info(db, user_info)
+    if "error" in result:
+        raise HTTPException(status_code=500, detail=result["error"])
+    return result

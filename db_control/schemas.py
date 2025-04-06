@@ -4,6 +4,8 @@ import datetime
 
 # ユーザー属性情報
 class UserInfo(BaseModel):
+    store_id: int
+    category_id: int
     age: int
     gender: str
     household: int
@@ -11,10 +13,13 @@ class UserInfo(BaseModel):
     class Config:
         orm_mode = True
 
+class UserInfoResponse(BaseModel):
+    reception_id: int
+
 # 回答データ（リクエスト用）
 class Answer(BaseModel):
     questionId: int
-    value: Union[int, float, bool, str]
+    value: Union[int, bool, str]
 
 # 回答リクエストのスキーマ
 class AnswerRequest(BaseModel):
@@ -36,4 +41,3 @@ class QuestionWithChoices(BaseModel):
     question_text: str
     answer_type: str
     choices: list[Choice] = []
-

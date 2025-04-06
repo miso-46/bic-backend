@@ -4,32 +4,31 @@ import datetime
 
 # 回答をDBに保存
 def save_answers(db: Session, answer_request: schemas.AnswerRequest):
-    # reception_id が存在するか確認
-    reception = db.query(models.Reception).filter(models.Reception.id == answer_request.receptionId).first()
-    if not reception:
-        return {"error": "Invalid reception ID"}
+    try:
+        for answer in answer_request.answers:
+            # question の型を取得
+            question = db.query(models.Question).filter(models.Question.id == answer.questionId).first()
+            if not question:
+                return {"error": f"Invalid question ID: {answer.questionId}"}
 
-    for answer in answer_request.answers:
-        # question の型を取得
-        question = db.query(models.Question).filter(models.Question.id == answer.questionId).first()
-        if not question:
-            return {"error": f"Invalid question ID: {answer.questionId}"}
+            answer_type = question.answer_type.value  # Enumの値を取得
 
-        answer_type = question.answer_type.value  # Enumの値を取得
-
-        # 回答データを適切なカラムに格納
-        answer_data = models.AnswerInfo(
+            # 回答データを適切なカラムに格納
+            answer_data = models.AnswerInfo(
             reception_id=answer_request.receptionId,
-            question_id=answer.questionId,
-            answer_numeric=answer.value if answer_type == "numeric" else None,
-            answer_boolean=answer.value if answer_type == "boolean" else None,
-            answer_categorical=answer.value if answer_type == "categorical" else None
-        )
+                question_id=answer.questionId,
+                answer_numeric=answer.value if answer_type == "numeric" else None,
+                answer_boolean=answer.value if answer_type == "boolean" else None,
+                answer_categorical=answer.value if answer_type == "categorical" else None
+            )
 
-        db.add(answer_data)
+            db.add(answer_data)
 
-    db.commit()
-    return {"message": "Answers saved successfully"}
+        db.commit()
+        return {"message": "保存が完了しました"}
+    except Exception as e:
+        db.rollback()
+        return {"error": f"回答の保存に失敗しました: {str(e)}"}
 
 
 # 質問と回答候補を送る
@@ -68,15 +67,29 @@ def get_questions_by_category(db: Session, category_id: int):
 
 
 # ユーザー属性情報登録
-def save_user_info(db: Session, user_info: schemas.UserInfo) -> int:
-    new_user = models.User(
-        store_id=5,  # フロントエンドから固定で送られる store_id（今は一旦5にしておく）
-        age=user_info.age,
-        gender=user_info.gender,
-        household=user_info.household,
-        time=datetime.datetime.utcnow()
-    )
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-    return new_user.id
+def save_user_info(db: Session, user_info: schemas.UserInfo):
+    try:
+        new_user = models.User(
+            store_id=user_info.store_id,
+            age=user_info.age,
+            gender=user_info.gender,
+            household=user_info.household,
+            time=datetime.datetime.utcnow()
+        )
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+
+        new_reception = models.Reception(
+            user_id=new_user.id,
+            category_id=user_info.category_id,
+            time=datetime.datetime.utcnow()
+        )
+        db.add(new_reception)
+        db.commit()
+        db.refresh(new_reception)
+
+        return {"reception_id": new_reception.id}
+    except Exception as e:
+        db.rollback()
+        return {"error": f"ユーザー情報の保存に失敗しました: {str(e)}"}
