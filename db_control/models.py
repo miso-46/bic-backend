@@ -40,3 +40,13 @@ class AnswerInfo(Base):
     answer_numeric = Column(Integer, nullable=True)
     answer_boolean = Column(Boolean, nullable=True)
     answer_categorical = Column(String, nullable=True)
+
+# むかげん開発用コード
+class QuestionWeight(Base):
+    __tablename__ = 'question_weights'
+
+    id = Column(Integer, primary_key=True)
+    question_id = Column(String(10))
+    choice_label = Column(String(50))
+    axis = Column(String(50))
+    weight = Column(Float)

@@ -29,3 +29,43 @@ def save_answers(db: Session, answer_request: schemas.AnswerRequest):
 
     db.commit()
     return {"message": "Answers saved successfully"}
+
+# ---  むかげん開発用コード  ---
+def get_weight_map(db: Session):
+    result = db.query(QuestionWeight).all()
+    weight_map = {}
+    for row in result:
+        weight_map.setdefault(row.question_id, {}).setdefault(row.choice_label, {})[row.axis] = row.weight
+    return weight_map
+
+def get_product_features(db: Session):
+    result = db.query(ProductFeature).all()
+    product_features = {}
+    for row in result:
+        product_features.setdefault(row.product_name, {})[row.axis] = row.weight
+    return product_features
+
+def calculate_scores(answers: dict, weights: dict) -> dict:
+    scores = {}
+    for question_id, selected_option in answers.items():
+        if question_id in weights and selected_option in weights[question_id]:
+            for axis, weight in weights[question_id][selected_option].items():
+                scores[axis] = scores.get(axis, 0) + weight
+    return scores
+
+def match_products(user_scores: dict, product_features: dict, top_n: int = 3):
+    product_scores = []
+    for product, features in product_features.items():
+        score = sum(user_scores.get(axis, 0) * weight for axis, weight in features.items())
+        product_scores.append({"product": product, "score": round(score, 2)})
+    return sorted(product_scores, key=lambda x: x["score"], reverse=True)[:top_n]
+
+def recommend_products(db: Session, answer_request):
+    weight_map = get_weight_map(db)
+    product_features = get_product_features(db)
+    user_scores = calculate_scores(answer_request.answers, weight_map)
+    recommendations = match_products(user_scores, product_features)
+    return {
+        "user_scores": user_scores,
+        "recommendations": recommendations
+    }
