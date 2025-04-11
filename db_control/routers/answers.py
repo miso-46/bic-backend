@@ -13,3 +13,10 @@ def submit_answers(answer_request: schemas.AnswerRequest, db: Session = Depends(
         raise HTTPException(status_code=400, detail=result["error"])
 
     return result
+
+@router.get("/{reception_id}", response_model=schemas.AnswerRequest)
+def read_answers(reception_id: int, db: Session = Depends(get_db)):
+    result = crud.get_answers_by_reception_id(db, reception_id)
+    if not result.answers:
+        raise HTTPException(status_code=404, detail="回答が見つかりません")
+    return result
