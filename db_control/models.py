@@ -50,3 +50,29 @@ class QuestionWeight(Base):
     choice_label = Column(String(50))
     axis = Column(String(50))
     weight = Column(Float)
+
+class Suggestion(Base):
+    __tablename__ = "suggestion"
+    id = Column(Integer, primary_key=True, index=True)
+    reception_id = Column(Integer, ForeignKey("reception.id"))
+    product_id = Column(Integer, ForeignKey("product.id"))
+    ranking = Column(Integer)
+
+class Product(Base):
+    __tablename__ = "product"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String)
+    brand = Column(String)
+    price = Column(Integer)
+    width = Column(Float)
+    depth = Column(Float)
+    height = Column(Float)
+    description = Column(String)
+    category_id = Column(Integer, ForeignKey("category.id"))
+
+class Metric(Base):
+    __tablename__ = "metrics"
+
+    id = Column(Integer, primary_key=True, index=True)
+    category_id = Column(Integer)
+    name = Column(String)

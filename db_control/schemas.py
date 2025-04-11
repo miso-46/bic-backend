@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Union
+from typing import Dict,List, Union
 import datetime
 
 # 回答データ（リクエスト用）
@@ -17,13 +17,14 @@ class AnswerResponse(BaseModel):
     message: str
 
 # むかげん開発用範囲
-class AnswerRequest(BaseModel):
-    answers: Dict[str, str]  # 例: {"Q1": "選択肢A", "Q2": "選択肢B"}
+class UserAnswer(BaseModel):
+    questionId: int
+    value: int
 
-class Recommendation(BaseModel):
-    product: str
-    score: float
+class UserInput(BaseModel):
+    receptionId: int
+    answers: List[UserAnswer]
 
-class RecommendationResponse(BaseModel):
-    user_scores: Dict[str, float]
-    recommendations: List[Recommendation]  
+class ConfirmRecommendation(BaseModel):
+    receptionId: int
+    scores: Dict[int, float]  # metrics_id: score
