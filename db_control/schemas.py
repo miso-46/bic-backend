@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field
-from typing import List, Union
+from typing import List, Union, Dict
+from decimal import Decimal
 import datetime
 
 # ユーザー属性情報
@@ -19,7 +20,7 @@ class UserInfoResponse(BaseModel):
 # 回答データ（リクエスト用）
 class Answer(BaseModel):
     questionId: int
-    value: Union[int, bool, str]
+    answer: int
 
 # 回答リクエストのスキーマ
 class AnswerRequest(BaseModel):
@@ -41,3 +42,30 @@ class QuestionWithChoices(BaseModel):
     question_text: str
     answer_type: str
     choices: list[Choice] = []
+
+# むかげん開発用範囲 ----
+class UserAnswer(BaseModel):
+    questionId: int
+    value: int
+
+class UserInput(BaseModel):
+    receptionId: int
+    answers: List[UserAnswer]
+
+class ConfirmRecommendation(BaseModel):
+    receptionId: int
+    scores: Dict[int, float]  # metrics_id: score
+
+class PriorityItem(BaseModel):
+    reception_id: int
+    metrics_id: int
+    level: Decimal
+
+class PriorityIn(BaseModel):
+    priorities: List[PriorityItem]
+
+class PriorityScore(BaseModel):
+    metricsId: int
+    name: str
+    score: Decimal
+# むかげん開発用範囲 ---- ここまで -----

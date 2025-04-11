@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, Float, DateTime, Enum
+from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, Float, DateTime, Enum, Numeric
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql import func
@@ -19,11 +19,6 @@ class User(Base):
     household = Column(Integer, nullable=False)
     time = Column(DateTime, default=datetime.datetime.utcnow)
 
-# 回答の型を定義
-class AnswerType(enum.Enum):
-    numeric = "numeric"
-    boolean = "boolean"
-    categorical = "categorical"
 
 # reception テーブル（ユーザーと質問セッションを紐づけ）
 class Reception(Base):
@@ -33,13 +28,6 @@ class Reception(Base):
     category_id = Column(Integer, nullable=False)
     time = Column(DateTime, default=datetime.datetime.utcnow)
 
-# question テーブル（設問情報）
-class Question(Base):
-    __tablename__ = "question"
-    id = Column(Integer, primary_key=True, index=True)
-    category_id = Column(Integer, nullable=False)
-    question_text = Column(String, nullable=False)
-    answer_type = Column(Enum(AnswerType), nullable=False)
 
 # answer_info テーブル（回答を格納）
 class AnswerInfo(Base):
@@ -47,6 +35,57 @@ class AnswerInfo(Base):
     id = Column(Integer, primary_key=True, index=True)
     reception_id = Column(Integer, ForeignKey("reception.id"), nullable=False)
     question_id = Column(Integer, ForeignKey("question.id"), nullable=False)
-    answer_numeric = Column(Integer, nullable=True)
-    answer_boolean = Column(Boolean, nullable=True)
-    answer_categorical = Column(String, nullable=True)
+    answer = Column(Integer, nullable=False)
+
+# ---  むかげん開発用コード ---
+# question テーブル（設問情報）
+class Question(Base):
+    __tablename__ = "question"
+    id = Column(Integer, primary_key=True, index=True)
+    category_id = Column(Integer, ForeignKey("category.id"))
+    question_text = Column(String)
+
+# question_option テーブル（設問の選択肢情報）
+class QuestionOption(Base):
+    __tablename__ = "question_option"
+    id = Column(Integer, primary_key=True, index=True)
+    question_id = Column(Integer, ForeignKey("question.id"))
+    label = Column(String)
+    value = Column(Integer)
+
+# suggestion テーブル（お薦めした商品の情報を格納）
+class Suggestion(Base):
+    __tablename__ = "suggestion"
+    id = Column(Integer, primary_key=True, index=True)
+    reception_id = Column(Integer, ForeignKey("reception.id"))
+    product_id = Column(Integer, ForeignKey("product.id"))
+    ranking = Column(Integer)
+
+# sproduct テーブル（商品の基礎情報）
+class Product(Base):
+    __tablename__ = "product"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String)
+    brand = Column(String)
+    price = Column(Integer)
+    width = Column(Float)
+    depth = Column(Float)
+    height = Column(Float)
+    description = Column(String)
+    category_id = Column(Integer, ForeignKey("category.id"))
+
+# metrics テーブル（商品の評価項目）
+class Metric(Base):
+    __tablename__ = "metrics"
+    id = Column(Integer, primary_key=True, index=True)
+    category_id = Column(Integer)
+    name = Column(String)
+
+# metrics テーブル（ユーザーごとの評価結果）
+class Priority(Base):
+    __tablename__ = "priority"
+    id = Column(Integer, primary_key=True, index=True)
+    reception_id = Column(Integer, ForeignKey("reception.id"))
+    metrics_id = Column(Integer, ForeignKey("metrics.id"))
+    level = Column(Numeric(10, 2))
+# ---  むかげん開発用コード ここまで ---
