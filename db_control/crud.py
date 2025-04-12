@@ -2,6 +2,10 @@ from sqlalchemy.orm import Session
 from db_control import models, schemas
 import datetime
 import bcrypt
+import os
+import base64
+from azure.storage.blob import BlobServiceClient
+from dotenv import load_dotenv
 
 # 回答をDBに保存
 def save_answers(db: Session, answer_request: schemas.AnswerRequest):
@@ -143,14 +147,59 @@ def recommend_products(db: Session, answer_request):
 # 店舗認証処理
 def verify_store_credentials(db: Session, name: str, password: str):
     try:
+        load_dotenv()
+        account_name = os.getenv("AZURE_STORAGE_ACCOUNT_NAME")
+        account_key = os.getenv("AZURE_STORAGE_ACCOUNT_KEY")
+        container_name = os.getenv("AZURE_STORAGE_CONTAINER_NAME")
+
         store = db.query(models.Store).filter(models.Store.name == name).first()
-        if store and bcrypt.checkpw(password.encode("utf-8"), store.password.encode("utf-8")):
+        if not store or not bcrypt.checkpw(password.encode("utf-8"), store.password.encode("utf-8")):
+            return None
+
+        bic_girl = db.query(models.BicGirl).filter(models.BicGirl.store_id == store.id).first()
+        if not bic_girl:
             return {
                 "store_id": store.id,
-                "name": store.name,
-                "prefecture": store.prefecture
+                "store_name": store.name,
+                "prefecture": store.prefecture,
+                "character": schemas.CharacterInfo(
+                    name="",
+                    image=None,
+                    movie=None,
+                    voice_1=None,
+                    voice_2=None,
+                    message_1=None,
+                    message_2=None
+                )
             }
-        else:
-            return None
+
+        blob_service_client = BlobServiceClient(account_url=f"https://{account_name}.blob.core.windows.net", credential=account_key)
+
+        def fetch_blob_as_base64(path):
+            if not path:
+                return None
+            try:
+                blob_client = blob_service_client.get_blob_client(container=container_name, blob=path)
+                stream = blob_client.download_blob()
+                return base64.b64encode(stream.readall()).decode("utf-8")
+            except Exception:
+                return None
+
+        character = {
+            "name": bic_girl.name,
+            "image": fetch_blob_as_base64(bic_girl.image),
+            "movie": fetch_blob_as_base64(bic_girl.movie),
+            "voice_1": fetch_blob_as_base64(bic_girl.voice_1),
+            "voice_2": fetch_blob_as_base64(bic_girl.voice_2),
+            "message_1": bic_girl.message_1,
+            "message_2": bic_girl.message_2,
+        }
+
+        return {
+            "store_id": store.id,
+            "store_name": store.name,
+            "prefecture": store.prefecture,
+            "character": character
+        }
     except Exception as e:
         return {"error": f"認証エラー: {str(e)}"}

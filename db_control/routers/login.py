@@ -10,4 +10,9 @@ def store_login(request: schemas.StoreLoginRequest, db: Session = Depends(get_db
     store_info = crud.verify_store_credentials(db, request.name, request.password)
     if not store_info:
         raise HTTPException(status_code=401, detail="店舗名またはパスワードが正しくありません。")
-    return schemas.StoreLoginResponse(**store_info)
+
+    character_data = store_info.pop("character", {})
+    return schemas.StoreLoginResponse(
+        **store_info,
+        character=schemas.CharacterInfo(**character_data)
+    )
