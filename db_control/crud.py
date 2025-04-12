@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from db_control import models, schemas
 import datetime
+import bcrypt
 
 # 回答をDBに保存
 def save_answers(db: Session, answer_request: schemas.AnswerRequest):
@@ -137,3 +138,19 @@ def recommend_products(db: Session, answer_request):
         "recommendations": recommendations
     }
 # ---  むかげん開発用コード ここまで ---
+
+
+# 店舗認証処理
+def verify_store_credentials(db: Session, name: str, password: str):
+    try:
+        store = db.query(models.Store).filter(models.Store.name == name).first()
+        if store and bcrypt.checkpw(password.encode("utf-8"), store.password.encode("utf-8")):
+            return {
+                "store_id": store.id,
+                "name": store.name,
+                "prefecture": store.prefecture
+            }
+        else:
+            return None
+    except Exception as e:
+        return {"error": f"認証エラー: {str(e)}"}

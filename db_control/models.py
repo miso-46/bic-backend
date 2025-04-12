@@ -20,6 +20,16 @@ class User(Base):
     time = Column(DateTime, default=datetime.datetime.utcnow)
 
 
+# storeテーブル
+class Store(Base):
+    __tablename__ = "store"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(255), nullable=False)
+    password = Column(String(255), nullable=False)  # bcryptでハッシュ化済みの文字列を格納
+    prefecture = Column(String(100), nullable=True)
+    is_available = Column(Boolean, default=True)
+    time = Column(DateTime, default=datetime.datetime.utcnow)
+
 # reception テーブル（ユーザーと質問セッションを紐づけ）
 class Reception(Base):
     __tablename__ = "reception"
@@ -61,7 +71,7 @@ class Suggestion(Base):
     product_id = Column(Integer, ForeignKey("product.id"))
     ranking = Column(Integer)
 
-# sproduct テーブル（商品の基礎情報）
+# product テーブル（商品の基礎情報）
 class Product(Base):
     __tablename__ = "product"
     id = Column(Integer, primary_key=True, index=True)

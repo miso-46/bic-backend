@@ -3,6 +3,16 @@ from typing import List, Union, Dict
 from decimal import Decimal
 import datetime
 
+# 店舗ログイン情報
+class StoreLoginRequest(BaseModel):
+    name: str
+    password: str
+
+class StoreLoginResponse(BaseModel):
+    store_id: int
+    name: str
+    prefecture: str
+
 # ユーザー属性情報
 class UserInfo(BaseModel):
     store_id: int
