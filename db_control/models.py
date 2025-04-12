@@ -30,6 +30,20 @@ class Store(Base):
     is_available = Column(Boolean, default=True)
     time = Column(DateTime, default=datetime.datetime.utcnow)
 
+
+# bic_girl テーブル（店舗キャラクター情報）
+class BicGirl(Base):
+    __tablename__ = "bic_girl"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(255), nullable=False)
+    store_id = Column(Integer, ForeignKey("store.id"), nullable=True)
+    image = Column(String(255), nullable=True)
+    movie = Column(String(255), nullable=True)
+    voice_1 = Column(String(255), nullable=True)
+    voice_2 = Column(String(255), nullable=True)
+    message_1 = Column(String(255), nullable=True)
+    message_2 = Column(String(255), nullable=True)
+
 # reception テーブル（ユーザーと質問セッションを紐づけ）
 class Reception(Base):
     __tablename__ = "reception"
