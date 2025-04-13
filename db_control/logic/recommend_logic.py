@@ -54,6 +54,7 @@ def get_top_products(user_scores: Dict[int, float], db: Session, top_n=3) -> Lis
     similarities = calculate_similarity(df, user_scores)
     return [int(pid) for pid, _ in similarities[:top_n]]
 
+# recommend商品を保存
 def save_suggestions(reception_id: int, product_ids: List[int], db: Session, max_retries: int = 3):
     retries = 0
     while retries < max_retries:
@@ -61,26 +62,33 @@ def save_suggestions(reception_id: int, product_ids: List[int], db: Session, max
             # 既存レコード削除
             db.query(models.Suggestion).filter(models.Suggestion.reception_id == reception_id).delete()
 
-            # 一括でSuggestionオブジェクト生成
+            # Suggestion オブジェクト作成
             suggestions = [
                 models.Suggestion(reception_id=reception_id, product_id=pid, ranking=rank)
                 for rank, pid in enumerate(product_ids, start=1)
             ]
 
-            # 一括保存
             db.bulk_save_objects(suggestions)
             db.commit()
-            break  # 成功したらループ終了
+            return  # 成功したら終了
+
         except OperationalError as e:
             if "Deadlock found" in str(e):
                 db.rollback()
                 retries += 1
-                time.sleep(0.5)  # 少し待ってからリトライ
+                time.sleep(0.5)  # リトライ前に少し待機
             else:
-                raise  # 他のエラーは再スロー
+                db.rollback()
+                raise  # その他のエラーはそのまま上へ
 
-def get_product_details(product_ids: List[int], db: Session):
+    # すべてのリトライで失敗した場合
+    raise Exception(f"Deadlock could not be resolved after {max_retries} retries.")
+
+# recommend商品の詳細とスコアの取得
+def get_product_details(product_ids: List[int], reception_id: int, db: Session):
     ids_str = "(" + ",".join(map(str, product_ids)) + ")"
+
+    # 商品情報の取得
     query = f"""
         SELECT
             p.id,
@@ -97,6 +105,26 @@ def get_product_details(product_ids: List[int], db: Session):
         WHERE p.id IN {ids_str}
     """
     df = pd.read_sql(query, db.bind)
+
+    # 商品ごとの metrics スコアを取得（metrics_id を使うように修正）
+    score_query = f"""
+        SELECT
+            pm.product_id,
+            pm.metrics_id,
+            pm.level
+        FROM product_metrics pm
+        WHERE pm.product_id IN {ids_str}
+    """
+    score_df = pd.read_sql(score_query, db.bind)
+
+    # 商品IDごとのスコア辞書に変換（← metrics_id を key に）
+    score_dict = (
+        score_df.groupby("product_id")
+        .apply(lambda x: {str(row["metrics_id"]): row["level"] for _, row in x.iterrows()})
+        .to_dict()
+    )
+
+    # 商品詳細とスコア統合
     return [
         {
             "id": int(row["id"]),
@@ -109,7 +137,8 @@ def get_product_details(product_ids: List[int], db: Session):
                 "height": row["height"]
             },
             "description": row["description"],
-            "category": row["category"]
+            "category": row["category"],
+            "scores": score_dict.get(row["id"], {})  # ← RadarChart 用にここで渡す！
         }
         for _, row in df.iterrows()
     ]

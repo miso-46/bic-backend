@@ -12,7 +12,7 @@ from db_control.logic.recommend_logic import (
 
 router = APIRouter(prefix="/recommend", tags=["recommend"])
 
-# ステップ① スコア計算
+# スコア計算
 @router.post("/score")
 def recommend_score(user_input: schemas.UserInput, db: Session = Depends(get_db)):
     user_scores = convert_answers_to_scores(user_input)
@@ -36,7 +36,7 @@ def recommend_score(user_input: schemas.UserInput, db: Session = Depends(get_db)
     })
 
 
-# ステップ② 推薦確定
+# 推薦確定
 @router.post("/confirm")
 def confirm_recommendation(
     confirm_input: schemas.ConfirmRecommendation,
@@ -44,7 +44,7 @@ def confirm_recommendation(
 ):
     top_product_ids = get_top_products(confirm_input.scores, db)
     save_suggestions(confirm_input.receptionId, top_product_ids, db)
-    product_details = get_product_details(top_product_ids, db)
+    product_details = get_product_details(top_product_ids, confirm_input.receptionId, db)
 
     return JSONResponse(content={
         "receptionId": confirm_input.receptionId,
