@@ -1,7 +1,11 @@
 from typing import Dict, List
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 from db_control.schemas import UserInput
 from db_control import models
+import numpy as np
+import pandas as pd
+import time
 
 def convert_answers_to_scores(user_input: UserInput, base_score=4.5, step=0.25) -> Dict[int, float]:
     scores = {i: base_score for i in range(1, 10)}
@@ -33,7 +37,6 @@ def convert_answers_to_scores(user_input: UserInput, base_score=4.5, step=0.25) 
     return scores
 
 def calculate_similarity(product_df, user_scores: Dict[int, float]) -> List[tuple]:
-    import numpy as np
     distances = []
     for pid in product_df["product_id"].unique():
         pdata = product_df[product_df["product_id"] == pid]
@@ -47,20 +50,36 @@ def calculate_similarity(product_df, user_scores: Dict[int, float]) -> List[tupl
     return distances
 
 def get_top_products(user_scores: Dict[int, float], db: Session, top_n=3) -> List[int]:
-    import pandas as pd
     df = pd.read_sql("SELECT product_id, metrics_id, level FROM product_metrics", db.bind)
     similarities = calculate_similarity(df, user_scores)
     return [int(pid) for pid, _ in similarities[:top_n]]
 
-def save_suggestions(reception_id: int, product_ids: List[int], db: Session):
-    from db_control.models import Suggestion
-    db.query(Suggestion).filter(Suggestion.reception_id == reception_id).delete()
-    for rank, pid in enumerate(product_ids, start=1):
-        db.add(Suggestion(reception_id=reception_id, product_id=pid, ranking=rank))
-    db.commit()
+def save_suggestions(reception_id: int, product_ids: List[int], db: Session, max_retries: int = 3):
+    retries = 0
+    while retries < max_retries:
+        try:
+            # 既存レコード削除
+            db.query(models.Suggestion).filter(models.Suggestion.reception_id == reception_id).delete()
+
+            # 一括でSuggestionオブジェクト生成
+            suggestions = [
+                models.Suggestion(reception_id=reception_id, product_id=pid, ranking=rank)
+                for rank, pid in enumerate(product_ids, start=1)
+            ]
+
+            # 一括保存
+            db.bulk_save_objects(suggestions)
+            db.commit()
+            break  # 成功したらループ終了
+        except OperationalError as e:
+            if "Deadlock found" in str(e):
+                db.rollback()
+                retries += 1
+                time.sleep(0.5)  # 少し待ってからリトライ
+            else:
+                raise  # 他のエラーは再スロー
 
 def get_product_details(product_ids: List[int], db: Session):
-    import pandas as pd
     ids_str = "(" + ",".join(map(str, product_ids)) + ")"
     query = f"""
         SELECT
