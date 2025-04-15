@@ -16,7 +16,8 @@ SQLAlchemy==2.0.30
 SQLAlchemy-Utils==0.41.1
 typing_extensions==4.12.2
 pandas==2.2.2
-numpy==1.26.4bcrypt==4.3.0
+numpy==1.26.4
+bcrypt==4.3.0
 azure-storage-blob==12.25.1
 azure-core==1.33.0
 certifi==2025.1.31
