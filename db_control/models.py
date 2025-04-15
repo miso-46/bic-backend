@@ -38,7 +38,7 @@ class BicGirl(Base):
     name = Column(String(255), nullable=False)
     store_id = Column(Integer, ForeignKey("store.id"), nullable=True)
     image = Column(String(255), nullable=True)
-    movie = Column(String(255), nullable=True)
+    video = Column(String(255), nullable=True)
     voice_1 = Column(String(255), nullable=True)
     voice_2 = Column(String(255), nullable=True)
     message_1 = Column(String(255), nullable=True)

@@ -165,7 +165,7 @@ def verify_store_credentials(db: Session, name: str, password: str):
                 "character": schemas.CharacterInfo(
                     name="",
                     image=None,
-                    movie=None,
+                    video=None,
                     voice_1=None,
                     voice_2=None,
                     message_1=None,
@@ -194,7 +194,7 @@ def verify_store_credentials(db: Session, name: str, password: str):
         character = {
             "name": bic_girl.name,
             "image": generate_sas_url(bic_girl.image),
-            "movie": generate_sas_url(bic_girl.movie),
+            "video": generate_sas_url(bic_girl.video),
             "voice_1": generate_sas_url(bic_girl.voice_1),
             "voice_2": generate_sas_url(bic_girl.voice_2),
             "message_1": bic_girl.message_1,
