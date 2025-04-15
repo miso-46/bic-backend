@@ -209,3 +209,19 @@ def verify_store_credentials(db: Session, name: str, password: str):
         }
     except Exception as e:
         return {"error": f"認証エラー: {str(e)}"}
+
+# 店舗タブレット登録
+from sqlalchemy.orm import Session
+from db_control import models, schemas
+
+def create_tablet(db: Session, tablet: schemas.TabletRegisterRequest):
+    db_tablet = models.Tablet(
+        uuid=tablet.uuid,
+        store_id=tablet.store_id,
+        floor=tablet.floor,
+        area=tablet.area,
+    )
+    db.add(db_tablet)
+    db.commit()
+    db.refresh(db_tablet)
+    return db_tablet

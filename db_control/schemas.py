@@ -27,6 +27,17 @@ class StoreLoginResponse(BaseModel):
     prefecture: str
     character: CharacterInfo
 
+#　店舗タブレット情報
+class TabletRegisterRequest(BaseModel):
+    uuid: str
+    store_id: int
+    floor: str
+    area: str
+
+class TabletRegisterResponse(BaseModel):
+    message: str
+
+
 # ユーザー属性情報
 class UserInfo(BaseModel):
     store_id: int

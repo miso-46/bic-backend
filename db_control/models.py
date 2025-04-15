@@ -113,3 +113,12 @@ class Priority(Base):
     metrics_id = Column(Integer, ForeignKey("metrics.id"))
     level = Column(Numeric(10, 2))
 # ---  むかげん開発用コード ここまで ---
+
+# tablet テーブル（タブレットの設置場所情報）
+class Tablet(Base):
+    __tablename__ = "tablet"
+    uuid = Column(String(255), primary_key=True)
+    store_id = Column(Integer, ForeignKey("store.id"), nullable=True)
+    area = Column(String(255), nullable=False)
+    floor = Column(String(255), nullable=False)
+    time = Column(DateTime, default=datetime.datetime.utcnow)
