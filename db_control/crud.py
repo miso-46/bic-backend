@@ -1,6 +1,11 @@
 from sqlalchemy.orm import Session
 from db_control import models, schemas
 import datetime
+import bcrypt
+import os
+import base64
+from azure.storage.blob import BlobServiceClient, generate_blob_sas, BlobSasPermissions
+from dotenv import load_dotenv
 
 # 回答をDBに保存
 def save_answers(db: Session, answer_request: schemas.AnswerRequest):
@@ -137,3 +142,70 @@ def recommend_products(db: Session, answer_request):
         "recommendations": recommendations
     }
 # ---  むかげん開発用コード ここまで ---
+
+
+# 店舗認証処理
+def verify_store_credentials(db: Session, name: str, password: str):
+    try:
+        load_dotenv()
+        account_name = os.getenv("AZURE_STORAGE_ACCOUNT_NAME")
+        account_key = os.getenv("AZURE_STORAGE_ACCOUNT_KEY")
+        container_name = os.getenv("AZURE_STORAGE_CONTAINER_NAME")
+
+        store = db.query(models.Store).filter(models.Store.name == name).first()
+        if not store or not bcrypt.checkpw(password.encode("utf-8"), store.password.encode("utf-8")):
+            return None
+
+        bic_girl = db.query(models.BicGirl).filter(models.BicGirl.store_id == store.id).first()
+        if not bic_girl:
+            return {
+                "store_id": store.id,
+                "store_name": store.name,
+                "prefecture": store.prefecture,
+                "character": schemas.CharacterInfo(
+                    name="",
+                    image=None,
+                    movie=None,
+                    voice_1=None,
+                    voice_2=None,
+                    message_1=None,
+                    message_2=None
+                )
+            }
+
+        blob_service_client = BlobServiceClient(account_url=f"https://{account_name}.blob.core.windows.net", credential=account_key)
+
+        def generate_sas_url(blob_name):
+            if not blob_name:
+                return None
+            try:
+                sas_token = generate_blob_sas(
+                    account_name=account_name,
+                    container_name=container_name,
+                    blob_name=blob_name,
+                    account_key=account_key,
+                    permission=BlobSasPermissions(read=True),
+                    expiry=datetime.datetime.utcnow() + datetime.timedelta(minutes=10)
+                )
+                return f"https://{account_name}.blob.core.windows.net/{container_name}/{blob_name}?{sas_token}"
+            except Exception:
+                return None
+
+        character = {
+            "name": bic_girl.name,
+            "image": generate_sas_url(bic_girl.image),
+            "movie": generate_sas_url(bic_girl.movie),
+            "voice_1": generate_sas_url(bic_girl.voice_1),
+            "voice_2": generate_sas_url(bic_girl.voice_2),
+            "message_1": bic_girl.message_1,
+            "message_2": bic_girl.message_2,
+        }
+
+        return {
+            "store_id": store.id,
+            "store_name": store.name,
+            "prefecture": store.prefecture,
+            "character": character
+        }
+    except Exception as e:
+        return {"error": f"認証エラー: {str(e)}"}

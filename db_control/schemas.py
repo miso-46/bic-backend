@@ -2,6 +2,30 @@ from pydantic import BaseModel, Field
 from typing import List, Union, Dict
 from decimal import Decimal
 import datetime
+from typing import Optional
+
+# 店舗ログイン情報
+class StoreLoginRequest(BaseModel):
+    name: str
+    password: str
+
+# レスポンスに店舗情報とキャラクター情報（メッセージやバイナリデータ）を含める
+# characterフィールドには 'name', 'image', 'movie', 'voice_1', 'voice_2', 'message_1', 'message_2' を含む
+# バイナリデータ（画像や音声など）はbase64エンコード済みの文字列にする想定
+class CharacterInfo(BaseModel):
+    name: str
+    image: Optional[str]
+    movie: Optional[str]
+    voice_1: Optional[str]
+    voice_2: Optional[str]
+    message_1: Optional[str]
+    message_2: Optional[str]
+
+class StoreLoginResponse(BaseModel):
+    store_id: int
+    store_name: str
+    prefecture: str
+    character: CharacterInfo
 
 # ユーザー属性情報
 class UserInfo(BaseModel):
