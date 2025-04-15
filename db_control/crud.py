@@ -4,7 +4,7 @@ import datetime
 import bcrypt
 import os
 import base64
-from azure.storage.blob import BlobServiceClient
+from azure.storage.blob import BlobServiceClient, generate_blob_sas, BlobSasPermissions
 from dotenv import load_dotenv
 
 # 回答をDBに保存
@@ -175,22 +175,28 @@ def verify_store_credentials(db: Session, name: str, password: str):
 
         blob_service_client = BlobServiceClient(account_url=f"https://{account_name}.blob.core.windows.net", credential=account_key)
 
-        def fetch_blob_as_base64(path):
-            if not path:
+        def generate_sas_url(blob_name):
+            if not blob_name:
                 return None
             try:
-                blob_client = blob_service_client.get_blob_client(container=container_name, blob=path)
-                stream = blob_client.download_blob()
-                return base64.b64encode(stream.readall()).decode("utf-8")
+                sas_token = generate_blob_sas(
+                    account_name=account_name,
+                    container_name=container_name,
+                    blob_name=blob_name,
+                    account_key=account_key,
+                    permission=BlobSasPermissions(read=True),
+                    expiry=datetime.datetime.utcnow() + datetime.timedelta(minutes=10)
+                )
+                return f"https://{account_name}.blob.core.windows.net/{container_name}/{blob_name}?{sas_token}"
             except Exception:
                 return None
 
         character = {
             "name": bic_girl.name,
-            "image": fetch_blob_as_base64(bic_girl.image),
-            "movie": fetch_blob_as_base64(bic_girl.movie),
-            "voice_1": fetch_blob_as_base64(bic_girl.voice_1),
-            "voice_2": fetch_blob_as_base64(bic_girl.voice_2),
+            "image": generate_sas_url(bic_girl.image),
+            "movie": generate_sas_url(bic_girl.movie),
+            "voice_1": generate_sas_url(bic_girl.voice_1),
+            "voice_2": generate_sas_url(bic_girl.voice_2),
             "message_1": bic_girl.message_1,
             "message_2": bic_girl.message_2,
         }
