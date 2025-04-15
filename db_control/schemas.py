@@ -15,7 +15,7 @@ class StoreLoginRequest(BaseModel):
 class CharacterInfo(BaseModel):
     name: str
     image: Optional[str]
-    movie: Optional[str]
+    video: Optional[str]
     voice_1: Optional[str]
     voice_2: Optional[str]
     message_1: Optional[str]
