@@ -1,6 +1,10 @@
 from sqlalchemy.orm import Session
 from db_control import models, schemas
 import datetime
+import bcrypt
+import os
+from azure.storage.blob import BlobServiceClient, generate_blob_sas, BlobSasPermissions
+from dotenv import load_dotenv
 
 # 回答をDBに保存
 def save_answers(db: Session, answer_request: schemas.AnswerRequest):
@@ -137,3 +141,119 @@ def recommend_products(db: Session, answer_request):
         "recommendations": recommendations
     }
 # ---  むかげん開発用コード ここまで ---
+
+
+# 店舗認証処理
+def verify_store_credentials(db: Session, name: str, password: str):
+    try:
+        load_dotenv()
+        account_name = os.getenv("AZURE_STORAGE_ACCOUNT_NAME")
+        account_key = os.getenv("AZURE_STORAGE_ACCOUNT_KEY")
+        container_name = os.getenv("AZURE_STORAGE_CONTAINER_NAME")
+
+        store = db.query(models.Store).filter(models.Store.name == name).first()
+        if not store or not bcrypt.checkpw(password.encode("utf-8"), store.password.encode("utf-8")):
+            return None
+
+        bic_girl = db.query(models.BicGirl).filter(models.BicGirl.store_id == store.id).first()
+        if not bic_girl:
+            return {
+                "store_id": store.id,
+                "store_name": store.name,
+                "prefecture": store.prefecture,
+                "character": schemas.CharacterInfo(
+                    name="",
+                    image=None,
+                    video=None,
+                    voice_1=None,
+                    voice_2=None,
+                    message_1=None,
+                    message_2=None
+                )
+            }
+
+        blob_service_client = BlobServiceClient(account_url=f"https://{account_name}.blob.core.windows.net", credential=account_key)
+
+        def generate_sas_url(blob_name):
+            if not blob_name:
+                return None
+            try:
+                sas_token = generate_blob_sas(
+                    account_name=account_name,
+                    container_name=container_name,
+                    blob_name=blob_name,
+                    account_key=account_key,
+                    permission=BlobSasPermissions(read=True),
+                    expiry=datetime.datetime.utcnow() + datetime.timedelta(minutes=10)
+                )
+                return f"https://{account_name}.blob.core.windows.net/{container_name}/{blob_name}?{sas_token}"
+            except Exception:
+                return None
+
+        character = {
+            "name": bic_girl.name,
+            "image": generate_sas_url(bic_girl.image),
+            "video": generate_sas_url(bic_girl.video),
+            "voice_1": generate_sas_url(bic_girl.voice_1),
+            "voice_2": generate_sas_url(bic_girl.voice_2),
+            "message_1": bic_girl.message_1,
+            "message_2": bic_girl.message_2,
+        }
+
+        return {
+            "store_id": store.id,
+            "store_name": store.name,
+            "prefecture": store.prefecture,
+            "character": character
+        }
+    except Exception as e:
+        return {"error": f"認証エラー: {str(e)}"}
+
+# 店舗タブレット登録
+from sqlalchemy.orm import Session
+from db_control import models, schemas
+
+def create_tablet(db: Session, tablet: schemas.TabletRegisterRequest):
+    db_tablet = models.Tablet(
+        uuid=tablet.uuid,
+        store_id=tablet.store_id,
+        floor=tablet.floor,
+        area=tablet.area,
+    )
+    db.add(db_tablet)
+    db.commit()
+    db.refresh(db_tablet)
+    return db_tablet
+
+
+# 店員呼び出し
+def get_reception_info_for_call(db: Session, reception_id: int, uuid: str):
+    try:
+        reception = db.query(models.Reception).filter(models.Reception.id == reception_id).first()
+        if not reception:
+            raise ValueError("指定されたreception_idが存在しません")
+
+        user = db.query(models.User).filter(models.User.id == reception.user_id).first()
+        if not user:
+            raise ValueError("Receptionに紐づくユーザーが存在しません")
+
+        store = db.query(models.Store).filter(models.Store.id == user.store_id).first()
+        if not store:
+            raise ValueError("ユーザーに紐づく店舗が存在しません")
+
+        category = db.query(models.Category).filter(models.Category.id == reception.category_id).first()
+        if not category:
+            raise ValueError("Receptionに紐づくカテゴリが存在しません")
+
+        tablet = db.query(models.Tablet).filter(models.Tablet.uuid == uuid).first()
+        if not tablet:
+            raise ValueError("指定されたUUIDのタブレット情報が存在しません")
+
+        return {
+            "store_name": store.name,
+            "floor": tablet.floor if tablet else "未登録",
+            "area": tablet.area if tablet else "未登録",
+            "category_name": category.name
+        }
+    except Exception as e:
+        raise e  # ここで詳細なエラー内容をそのまま上に投げる
