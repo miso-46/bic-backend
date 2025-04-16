@@ -3,7 +3,6 @@ from db_control import models, schemas
 import datetime
 import bcrypt
 import os
-import base64
 from azure.storage.blob import BlobServiceClient, generate_blob_sas, BlobSasPermissions
 from dotenv import load_dotenv
 
@@ -225,3 +224,36 @@ def create_tablet(db: Session, tablet: schemas.TabletRegisterRequest):
     db.commit()
     db.refresh(db_tablet)
     return db_tablet
+
+
+# 店員呼び出し
+def get_reception_info_for_call(db: Session, reception_id: int, uuid: str):
+    try:
+        reception = db.query(models.Reception).filter(models.Reception.id == reception_id).first()
+        if not reception:
+            raise ValueError("指定されたreception_idが存在しません")
+
+        user = db.query(models.User).filter(models.User.id == reception.user_id).first()
+        if not user:
+            raise ValueError("Receptionに紐づくユーザーが存在しません")
+
+        store = db.query(models.Store).filter(models.Store.id == user.store_id).first()
+        if not store:
+            raise ValueError("ユーザーに紐づく店舗が存在しません")
+
+        category = db.query(models.Category).filter(models.Category.id == reception.category_id).first()
+        if not category:
+            raise ValueError("Receptionに紐づくカテゴリが存在しません")
+
+        tablet = db.query(models.Tablet).filter(models.Tablet.uuid == uuid).first()
+        if not tablet:
+            raise ValueError("指定されたUUIDのタブレット情報が存在しません")
+
+        return {
+            "store_name": store.name,
+            "floor": tablet.floor if tablet else "未登録",
+            "area": tablet.area if tablet else "未登録",
+            "category_name": category.name
+        }
+    except Exception as e:
+        raise e  # ここで詳細なエラー内容をそのまま上に投げる

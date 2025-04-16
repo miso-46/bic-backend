@@ -104,3 +104,12 @@ class PriorityScore(BaseModel):
     name: str
     score: Decimal
 # むかげん開発用範囲 ---- ここまで -----
+
+
+# 店員呼び出し
+class CallSalesRequest(BaseModel):
+    reception_id: int
+    uuid: str
+    frontend_url: str
+class CallSalesResponse(BaseModel):
+    message: str

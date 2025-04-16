@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from db_control import models, schemas, crud, connect
-from db_control.routers import login, tablet, answers, question, user_info, recommend, priority
+from db_control.routers import login, tablet, answers, question, user_info, recommend, priority, call_sales
 import os
 from dotenv import load_dotenv
 
@@ -33,6 +33,7 @@ app.include_router(question.router)
 app.include_router(user_info.router)
 app.include_router(recommend.router)
 app.include_router(priority.router)
+app.include_router(call_sales.router)
 
 @app.get("/")
 def root():
