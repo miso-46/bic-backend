@@ -27,6 +27,17 @@ class StoreLoginResponse(BaseModel):
     prefecture: str
     character: CharacterInfo
 
+#　店舗タブレット情報
+class TabletRegisterRequest(BaseModel):
+    uuid: str
+    store_id: int
+    floor: str
+    area: str
+
+class TabletRegisterResponse(BaseModel):
+    message: str
+
+
 # ユーザー属性情報
 class UserInfo(BaseModel):
     store_id: int
@@ -93,3 +104,12 @@ class PriorityScore(BaseModel):
     name: str
     score: Decimal
 # むかげん開発用範囲 ---- ここまで -----
+
+
+# 店員呼び出し
+class CallSalesRequest(BaseModel):
+    reception_id: int
+    uuid: str
+    frontend_url: str
+class CallSalesResponse(BaseModel):
+    message: str
