@@ -96,6 +96,7 @@ class Product(Base):
     depth = Column(Float)
     height = Column(Float)
     description = Column(String)
+    image = Column(String(255), nullable=True)
     category_id = Column(Integer, ForeignKey("category.id"))
 
 # metrics テーブル（商品の評価項目）

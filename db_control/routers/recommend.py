@@ -37,16 +37,17 @@ def recommend_score(user_input: schemas.UserInput, db: Session = Depends(get_db)
 
 
 # 推薦確定
-@router.post("/confirm")
+@router.post("/confirm", response_model=schemas.ConfirmRecommendationResponse)
 def confirm_recommendation(
     confirm_input: schemas.ConfirmRecommendation,
     db: Session = Depends(get_db)
 ):
+    # スコア算出と保存
     top_product_ids = get_top_products(confirm_input.scores, db)
     save_suggestions(confirm_input.receptionId, top_product_ids, db)
+    # 商品詳細取得
     product_details = get_product_details(top_product_ids, confirm_input.receptionId, db)
-
-    return JSONResponse(content={
-        "receptionId": confirm_input.receptionId,
-        "recommendedProducts": product_details
-    })
+    return schemas.ConfirmRecommendationResponse(
+        receptionId=confirm_input.receptionId,
+        recommendedProducts=product_details
+    )

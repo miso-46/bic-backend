@@ -113,3 +113,19 @@ class CallSalesRequest(BaseModel):
     frontend_url: str
 class CallSalesResponse(BaseModel):
     message: str
+
+# --- 商品詳細にimageフィールドを含めるレスポンススキーマを追加 ---
+class RecommendedProduct(BaseModel):
+    id: int
+    name: str
+    brand: str
+    price: float
+    dimensions: dict
+    description: str
+    category: str
+    image: Optional[str] = None  # Blob SAS URLなど
+    scores: Dict[str, float]
+
+class ConfirmRecommendationResponse(BaseModel):
+    receptionId: int
+    recommendedProducts: List[RecommendedProduct]
