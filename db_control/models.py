@@ -96,13 +96,14 @@ class Product(Base):
     depth = Column(Float)
     height = Column(Float)
     description = Column(String)
+    image = Column(String(255), nullable=True)
     category_id = Column(Integer, ForeignKey("category.id"))
 
 # metrics テーブル（商品の評価項目）
 class Metric(Base):
     __tablename__ = "metrics"
     id = Column(Integer, primary_key=True, index=True)
-    category_id = Column(Integer)
+    category_id = Column(Integer, ForeignKey("category.id"))
     name = Column(String)
 
 # metrics テーブル（ユーザーごとの評価結果）
@@ -126,7 +127,6 @@ class Tablet(Base):
 # 家電カテゴリ
 class Category(Base):
     __tablename__ = "category"
-
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(255), nullable=False)
 
@@ -136,3 +136,38 @@ class SalesCall(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     reception_id = Column(Integer, ForeignKey("reception.id"), nullable=True)
     time = Column(DateTime, default=datetime.datetime.utcnow)
+
+# 在庫管理（stock テーブル）
+class Stock(Base):
+    __tablename__ = "stock"
+    id = Column(Integer, primary_key=True, index=True)
+    store_id = Column(Integer, ForeignKey("store.id"), nullable=False)
+    product_id = Column(Integer, ForeignKey("product.id"), nullable=False)
+    color = Column(String(100), nullable=True)
+    number = Column(Integer, nullable=False)
+
+# 仕様一覧（property テーブル）
+class Property(Base):
+    __tablename__ = "property"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), nullable=False)
+
+# カテゴリ‐仕様中間テーブル（category_property）
+class CategoryProperty(Base):
+    __tablename__ = "category_property"
+    category_id = Column(Integer, ForeignKey("category.id"), primary_key=True)
+    property_id = Column(Integer, ForeignKey("property.id"), primary_key=True)
+
+# 製品‐仕様中間テーブル（product_property）
+class ProductProperty(Base):
+    __tablename__ = "product_property"
+    product_id = Column(Integer, ForeignKey("product.id"), primary_key=True)
+    property_id = Column(Integer, ForeignKey("property.id"), primary_key=True)
+    value = Column(String(255), nullable=False)
+
+# 製品評価中間テーブル（product_metrics）
+class ProductMetrics(Base):
+    __tablename__ = "product_metrics"
+    product_id = Column(Integer, ForeignKey("product.id"), primary_key=True)
+    metrics_id = Column(Integer, ForeignKey("metrics.id"), primary_key=True)
+    level = Column(Numeric(10, 2), nullable=False)
