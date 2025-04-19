@@ -6,6 +6,10 @@ from db_control import models
 import numpy as np
 import pandas as pd
 import time
+from dotenv import load_dotenv
+import os
+import datetime
+from azure.storage.blob import generate_blob_sas, BlobSasPermissions
 
 def convert_answers_to_scores(user_input: UserInput, base_score=4.5, step=0.25) -> Dict[int, float]:
     scores = {i: base_score for i in range(1, 10)}
@@ -88,6 +92,28 @@ def save_suggestions(reception_id: int, product_ids: List[int], db: Session, max
 def get_product_details(product_ids: List[int], reception_id: int, db: Session):
     ids_str = "(" + ",".join(map(str, product_ids)) + ")"
 
+    # Blob SAS URL生成用環境変数読み込み
+    load_dotenv()
+    account_name = os.getenv("AZURE_STORAGE_ACCOUNT_NAME")
+    account_key = os.getenv("AZURE_STORAGE_ACCOUNT_KEY")
+    container_name = os.getenv("AZURE_STORAGE_CONTAINER_NAME")
+
+    def generate_sas_url(blob_name: str):
+        if not blob_name:
+            return None
+        try:
+            sas_token = generate_blob_sas(
+                account_name=account_name,
+                container_name=container_name,
+                blob_name=blob_name,
+                account_key=account_key,
+                permission=BlobSasPermissions(read=True),
+                expiry=datetime.datetime.utcnow() + datetime.timedelta(minutes=10)
+            )
+            return f"https://{account_name}.blob.core.windows.net/{container_name}/{blob_name}?{sas_token}"
+        except Exception:
+            return None
+
     # 商品情報の取得
     query = f"""
         SELECT
@@ -99,6 +125,7 @@ def get_product_details(product_ids: List[int], reception_id: int, db: Session):
             p.depth,
             p.height,
             p.description,
+            p.image AS image,
             c.name AS category
         FROM product p
         LEFT JOIN category c ON p.category_id = c.id
@@ -137,6 +164,7 @@ def get_product_details(product_ids: List[int], reception_id: int, db: Session):
                 "height": row["height"]
             },
             "description": row["description"],
+            "image": generate_sas_url(row["image"]),
             "category": row["category"],
             "scores": score_dict.get(row["id"], {})  # ← RadarChart 用にここで渡す！
         }
