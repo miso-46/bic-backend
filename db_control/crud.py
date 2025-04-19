@@ -257,3 +257,57 @@ def get_reception_info_for_call(db: Session, reception_id: int, uuid: str):
         }
     except Exception as e:
         raise e  # ここで詳細なエラー内容をそのまま上に投げる
+
+# QRコード対応（店舗情報取得）
+def get_store_info(db: Session, store_id: int):
+    try:
+        load_dotenv()
+        account_name = os.getenv("AZURE_STORAGE_ACCOUNT_NAME")
+        account_key = os.getenv("AZURE_STORAGE_ACCOUNT_KEY")
+        container_name = os.getenv("AZURE_STORAGE_CONTAINER_NAME")
+
+        store = db.query(models.Store).filter(models.Store.id == store_id).first()
+        if not store:
+            return None
+
+        bic_girl = db.query(models.BicGirl).filter(models.BicGirl.store_id == store.id).first()
+
+        blob_service_client = BlobServiceClient(
+            account_url=f"https://{account_name}.blob.core.windows.net",
+            credential=account_key
+        )
+
+        def generate_sas_url(blob_name):
+            if not blob_name:
+                return None
+            try:
+                sas_token = generate_blob_sas(
+                    account_name=account_name,
+                    container_name=container_name,
+                    blob_name=blob_name,
+                    account_key=account_key,
+                    permission=BlobSasPermissions(read=True),
+                    expiry=datetime.datetime.utcnow() + datetime.timedelta(minutes=10)
+                )
+                return f"https://{account_name}.blob.core.windows.net/{container_name}/{blob_name}?{sas_token}"
+            except Exception:
+                return None
+
+        character_data = {
+            "name": bic_girl.name if bic_girl else "",
+            "image": generate_sas_url(bic_girl.image) if bic_girl else None,
+            "video": generate_sas_url(bic_girl.video) if bic_girl else None,
+            "voice_1": generate_sas_url(bic_girl.voice_1) if bic_girl else None,
+            "voice_2": generate_sas_url(bic_girl.voice_2) if bic_girl else None,
+            "message_1": bic_girl.message_1 if bic_girl else None,
+            "message_2": bic_girl.message_2 if bic_girl else None,
+        }
+
+        return {
+            "store_id": store.id,
+            "store_name": store.name,
+            "prefecture": store.prefecture,
+            "character": character_data
+        }
+    except Exception as e:
+        return None
