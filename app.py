@@ -28,13 +28,14 @@ models.Base.metadata.create_all(bind=connect.engine)
 # ルーターを追加
 app.include_router(login.router)
 app.include_router(tablet.router)
-app.include_router(answers.router)
+app.include_router(store.router)
 app.include_router(question.router)
 app.include_router(user_info.router)
+app.include_router(answers.router)
 app.include_router(recommend.router)
 app.include_router(priority.router)
 app.include_router(call_sales.router)
-app.include_router(store.router)
+
 
 @app.get("/")
 def root():
