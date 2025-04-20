@@ -30,6 +30,11 @@ def save_answers(db: Session, answer_request: schemas.AnswerRequest):
 
 # 質問と回答候補を取得して送信する
 def get_questions_by_category(db: Session, category_id: int):
+    # カテゴリの存在確認
+    category_exists = db.query(models.Category).filter(models.Category.id == category_id).first()
+    if not category_exists:
+        return {"error": "家電カテゴリが存在しません"}
+
     # 指定カテゴリの質問を取得
     questions = db.query(models.Question).filter(models.Question.category_id == category_id).all()
     # 全選択肢を取得して、question_id ごとにまとめる
@@ -42,6 +47,9 @@ def get_questions_by_category(db: Session, category_id: int):
             "label": opt.label,
             "value": opt.value
         })
+    if not questions:
+        return {"error": "質問が取得できません"}
+
     # レスポンス構築
     result = {}
     for q in questions:
